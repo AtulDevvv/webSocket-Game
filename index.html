@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Multiplaye-Game</title>
+
+</head>
+<body>
+
+    <h1> Multi-Player Game</h1>
+    <button class="btnCreate">new Game</button>
+    <input type="text" id="txtGameId">
+
+    <button class="Joinbtn">Join Game</button>
+
+    <div class="divPlayer"></div>
+    <div style="display: flex; flex-wrap: wrap; width: 800px;">
+      <div class="divBoard"></div>
+
+    </div>
+
+
+
+    <script>
+
+        const  btnCreate=document.querySelector('.btnCreate')
+        const btnJoin=document.querySelector('.Joinbtn')
+        const txtGameId=document.querySelector('#txtGameId')
+        const playerDiv=document.querySelector('.divPlayer')
+        const divBoard=document.querySelector('.divBoard')
+
+
+
+
+        
+
+        
+
+        btnCreate.addEventListener('click',e=>{
+            const payload={
+                "method":"create",
+               "clientId":clientId,
+            }
+            ws.send(JSON.stringify(payload))
+        })
+
+
+        btnJoin.addEventListener('click',(e)=>{
+      
+
+          if(gameId===null) {gameId=txtGameId.value}
+
+          const payload={
+            "method":"Join",
+            "clientId":clientId,
+            "gameId":gameId
+          }
+          ws.send(JSON.stringify(payload));
+        })
+        let clientId=null;
+        let gameId=null;
+        const ws= new WebSocket('ws://localhost:3000')
+        ws.onmessage=(msg)=>{
+            const response= JSON.parse(msg.data)
+
+            // player connected
+          if(response.method==='connect'){
+            clientId=response.clientId;
+            console.log("the clinet Id is:->",clientId)
+          }
+          // player created a new game
+          if(response.method==='create'){
+           gameId=response.game.id;
+            console.log("game is successfully created with  gameId" +" " + response.game.id+" with"+response.game.ball)
+          }
+
+          if(response.method==='update'){
+            if (!response.game.state) return;
+            for( const b of Object.keys(response.game.state)){
+
+              const color=response.game.state[b]
+              console.log(b)
+            const ballObject=  document.getElementById('ball'+b)
+
+
+            ballObject.style.backgroundColor= color
+
+
+            }
+
+          }
+          // player joined
+          if(response.method==='Join'){
+            console.log(response)
+            let palyerColor;
+           response.game.clients.map((c)=>{
+
+            // while(playerDiv.firstChild){
+            //   playerDiv.removeChild(playerDiv.firstChild)
+            // }
+            const d=document.createElement('div');
+            d.style.width='200px';
+            d.style.height='50px'
+            d.style.backgroundColor=c.color
+            d.textContent=c.clientId;
+            playerDiv.appendChild(d)
+
+            if(c.clientId===clientId){
+              palyerColor=c.color
+            }
+           })
+           while(divBoard.firstChild)
+           divBoard.removeChild (divBoard.firstChild)
+
+           for(let i=0;i<=response.game.ball;i++){
+            const b=document.createElement('button')
+            b.style.width='50px'
+            b.style.height='50px'
+            b.id='ball'+(i+1);
+            b.tag=i+1;
+            b.textContent=i+1;
+            b.style.textAlign='center'
+            b.addEventListener('click',e=>{
+              
+            
+              b.style.backgroundColor=palyerColor
+
+              const payload={
+                "method":"play",
+                "client":clientId,
+                "gameId":gameId,
+                "ballId":b.tag,
+                "color":palyerColor
+              }
+
+              ws.send(JSON.stringify(payload))
+
+
+            })
+            divBoard.appendChild(b)
+
+
+           }
+          }
+
+
+
+        }
+
+    </script>
+
+
+    
+</body>
+</html>
